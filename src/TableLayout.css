@@ -1,88 +1,76 @@
 .table-container {
-    position: relative;
-    width: 100vw;
-    height: 100vh;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    background-color: #0d6004; /* Green felt */
-  }
-  
-  /* Dealer (top center) */
-  .dealer {
-    position: absolute;
-    top: 5%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 200px;
-    text-align: center;
-    color: #fff;
-  }
-  
-  .dealer-name {
-    font-weight: bold;
-    font-size: 1.2rem;
-  }
-  
-  .dealer-cards {
-    margin-top: 10px;
-    display: flex;
-    gap: 5px;
-  }
-  
-  /* Seat styling */
-  .seat {
-    position: absolute;
-    width: 300px;
-    height: 150px;
-    text-align: center;
-    color: #fff;
-    /* Let's remove the background for seats */
-    border: 1px solid #666;
-    border-radius: 10px;
-    box-sizing: border-box;
-  }
-  
-  /* Cards area */
-  .player-cards {
-    position: absolute;
-    top: 0; 
-    left: 0; 
-    right: 0; 
-    bottom: 30px; 
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  /* Player name at bottom */
-  .player-name {
-    position: absolute;
-    bottom: 0; 
-    left: 0; 
-    width: 100%;
-    height: 30px;
-    line-height: 30px;
-    background-color: #ccc;
-    color: #000;
-    font-weight: bold;
-    border-bottom-left-radius: 10px;
-    border-bottom-right-radius: 10px;
-    box-sizing: border-box;
-  }
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #0d6004; /* Green felt */
+}
 
-  .player-info {
-    background-color: #ccc;
-    color: #000;
-    border-bottom-left-radius: 10px;
-    border-bottom-right-radius: 10px;
-    padding: 5px;
-    text-align: center;
-    font-weight: bold;
-  }
-  
-  /* Make the card a white rectangle with black border */
+/* Dealer (top center) */
+.dealer {
+  position: absolute;
+  top: 5%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  text-align: center;
+  color: #fff;
+}
+
+.dealer-name {
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.dealer-cards {
+  margin-top: 10px;
+  display: flex;
+  gap: 5px;
+}
+
+/* Seat styling */
+.seat {
+  position: absolute;
+  width: 300px;
+  height: 150px;
+  text-align: center;
+  color: #fff;
+  border: 1px solid #666;
+  border-radius: 10px;
+  box-sizing: border-box;
+  z-index: 10; /* so inputs are clickable */
+}
+
+/* Cards area */
+.player-cards {
+  position: relative; /* Instead of absolute to avoid covering bet input */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 5px; /* spacing between cards */
+  margin-top: 10px; 
+}
+
+/* Player name at bottom */
+.player-name {
+  position: relative;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 30px;
+  line-height: 30px;
+  background-color: #ccc;
+  color: #000;
+  font-weight: bold;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+  box-sizing: border-box;
+}
+
+/* Card styling */
 .card {
   background-color: #fff;
   border: 2px solid #000;
@@ -97,7 +85,7 @@
   box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-/* Circular chip for the bet */
+/* Bet chip */
 .bet-chip {
   width: 24px;
   height: 24px;
@@ -108,62 +96,88 @@
   justify-content: center;
   color: #fff;
   font-weight: bold;
+  margin-left: 5px;
 }
-  /* 
-    Layout according to your ASCII diagram:
-    
-                                 DEALER 
-  Player 8.                                              Player 1
-      Player 7                                       Player 2
-          Player 6                             Player 3
-                       Player 5   Player 4
-  */
+
+/* Betting input styling */
+.bet-input {
+  width: 60px;
+  padding: 4px;
+  margin-right: 8px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  z-index: 20; /* ensure it's above other seat elements */
+}
+
+/* Hit/Stand buttons (Phase 3) */
+.player-actions {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.actions-left {
+  left: -70px; /* place to the left for seats 1-4 */
+}
+
+.actions-right {
+  right: -70px; /* place to the right for seats 5-8 */
+}
+
+/*
+  Layout for seats 1..8 around the table:
   
-  /* Player 1: Top right */
-  .seat-1 {
-    top: 15%;
-    right: 5%;
-  }
-  
-  /* Player 2: Slightly lower on the right */
-  .seat-2 {
-    top: 35%;
-    right: 5%;
-  }
-  
-  /* Player 3: Even lower on the right */
-  .seat-3 {
-    top: 55%;
-    right: 5%;
-  }
-  
-  /* Player 4: Near bottom right/center */
-  .seat-4 {
-    top: 75%;
-    right: 5%;
-  }
-  
-  /* Player 5: Near bottom left/center */
-  .seat-5 {
-    top: 75%;
-    left: 5%;
-  }
-  
-  /* Player 6: Lower on the left */
-  .seat-6 {
-    top: 55%;
-    left: 5%;
-  }
-  
-  /* Player 7: Mid-left */
-  .seat-7 {
-    top: 35%;
-    left: 5%;
-  }
-  
-  /* Player 8: Top left */
-  .seat-8 {
-    top: 15%;
-    left: 5%;
-  }
-  
+                  DEALER 
+  Player 8                                 Player 1
+       Player 7                       Player 2
+            Player 6             Player 3
+                 Player 5   Player 4
+*/
+
+/* Player 1: Top right */
+.seat-1 {
+  top: 15%;
+  right: 5%;
+}
+
+/* Player 2: Slightly lower on the right */
+.seat-2 {
+  top: 35%;
+  right: 5%;
+}
+
+/* Player 3: Even lower on the right */
+.seat-3 {
+  top: 55%;
+  right: 5%;
+}
+
+/* Player 4: Near bottom right/center */
+.seat-4 {
+  top: 75%;
+  right: 5%;
+}
+
+/* Player 5: Near bottom left/center */
+.seat-5 {
+  top: 75%;
+  left: 5%;
+}
+
+/* Player 6: Lower on the left */
+.seat-6 {
+  top: 55%;
+  left: 5%;
+}
+
+/* Player 7: Mid-left */
+.seat-7 {
+  top: 35%;
+  left: 5%;
+}
+
+/* Player 8: Top left */
+.seat-8 {
+  top: 15%;
+  left: 5%;
+}
