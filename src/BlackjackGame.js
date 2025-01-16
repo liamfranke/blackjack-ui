@@ -23,6 +23,15 @@ function shuffleDeck(deck) {
   }
 }
 
+function generateShoe(deckCount) {
+  let shoe = [];
+  for (let i = 0; i < deckCount; i++) {
+    const singleDeck = generateDeck();
+    shoe = shoe.concat(singleDeck);
+  }
+  return shoe;
+}
+
 /** 
  * The order: 
  *  - First pass: deal 1 card to each of the 8 players (0..7)
@@ -61,17 +70,6 @@ function calculateScore(cards) {
   }
 
   return score;
-}
-
-/** Returns a random bet (multiple of 5) between 5 and 50 */
-function getRandomBet() {
-  // Possible bets: 5,10,15,...,50
-  const bets = [];
-  for (let b = 5; b <= 50; b += 5) {
-    bets.push(b);
-  }
-  const randomIndex = Math.floor(Math.random() * bets.length);
-  return bets[randomIndex];
 }
 
 export default function BlackjackGame() {
@@ -123,7 +121,7 @@ export default function BlackjackGame() {
     // Start at Phase 1
     setPhase(1);
     setBettingIndex(0);
-    // setCurrentPlayerIndex(0); // if needed for Phase 3
+    setCurrentPlayerIndex(0); // if needed for Phase 3
   }
 
   /**
@@ -155,7 +153,8 @@ export default function BlackjackGame() {
 
   function goToPhase2() {
     // Create & shuffle the deck
-    const freshDeck = generateDeck();
+    // Generate Shoe of 6 decks
+    const freshDeck = generateShoe(6);
     shuffleDeck(freshDeck);
     setDeck(freshDeck);
 
@@ -275,6 +274,38 @@ export default function BlackjackGame() {
     // Move on to next player
     setCurrentPlayerIndex((prev) => prev + 1);
   }
+  function handlePlayerDouble(playerId) {
+    const pIndex = players.findIndex((p) => p.id === playerId);
+    if (pIndex === -1) return;
+
+    // (Optional) If you want only the *current* player to act, check:
+    // if (pIndex !== currentPlayerIndex) return;
+
+    const newPlayers = [...players];
+    const playerToUpdate = { ...newPlayers[pIndex] };
+
+    // Deal one card from the deck
+    // (If you didn’t finish dealing up front, you must ensure you have enough cards left.)
+    // For the example, let's assume you still have leftover cards in `deck`.
+    const nextCard = deck.pop();
+
+    // Update this player’s hand
+    playerToUpdate.bet = playerToUpdate.bet * 2
+    playerToUpdate.cards = [...playerToUpdate.cards, nextCard];
+    playerToUpdate.score = calculateScore(playerToUpdate.cards);
+    playerToUpdate.actions = [...playerToUpdate.actions, "hit"];
+    
+    // If they bust
+    if (playerToUpdate.score > 21) {
+      playerToUpdate.actions.push("bust");
+    }
+
+    newPlayers[pIndex] = playerToUpdate;
+    setPlayers(newPlayers);
+    setDeck([...deck]); // updated deck
+    setCurrentPlayerIndex((prev) => prev + 1);
+  
+  }
 
   // Setup or clear the interval whenever isDealing changes
   useEffect(() => {
@@ -340,6 +371,9 @@ export default function BlackjackGame() {
           <p>
             Current player index is: {currentPlayerIndex + 1} 
             ({players[currentPlayerIndex]?.id})
+            <button onClick={handleRestart}>
+              Restart/Reshuffle
+            </button>
           </p>
         </div>
       )}
@@ -354,6 +388,7 @@ export default function BlackjackGame() {
         onSubmitBet={handleSubmitBet}
         onPlayerHit={handlePlayerHit}
         onPlayerStand={handlePlayerStand}
+        onPlayerDouble={handlePlayerDouble}
       />
 
     </div>

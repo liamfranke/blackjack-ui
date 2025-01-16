@@ -24,6 +24,7 @@ export default function TableLayout({
   onSubmitBet,
   onPlayerHit,
   onPlayerStand,
+  onPlayerDouble,
 }) {
   // Local state to store each seat’s bet input (only relevant during Phase 1)
   const [betInputs, setBetInputs] = useState({});
@@ -144,6 +145,11 @@ export default function TableLayout({
                   disabled={!isActiveHitStand}
                 >
                   Stand
+                </button>
+                <button onClick={() => onPlayerDouble(player.id)}
+                  disabled={!isActiveHitStand || player.actions.includes("hit")}
+                >
+                  Double
                 </button>
               </div>
             )}
