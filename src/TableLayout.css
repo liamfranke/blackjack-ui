@@ -33,7 +33,7 @@
   /* Seat styling */
   .seat {
     position: absolute;
-    width: 150px;
+    width: 300px;
     height: 150px;
     text-align: center;
     color: #fff;
@@ -86,9 +86,9 @@
 .card {
   background-color: #fff;
   border: 2px solid #000;
-  border-radius: 6px;
-  width: 50px;
-  height: 70px;
+  border-radius: 8px;
+  width: 40px;
+  height: 60px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -128,37 +128,37 @@
   /* Player 2: Slightly lower on the right */
   .seat-2 {
     top: 35%;
-    right: 15%;
+    right: 5%;
   }
   
   /* Player 3: Even lower on the right */
   .seat-3 {
     top: 55%;
-    right: 25%;
+    right: 5%;
   }
   
   /* Player 4: Near bottom right/center */
   .seat-4 {
     top: 75%;
-    right: 37.5%;
+    right: 5%;
   }
   
   /* Player 5: Near bottom left/center */
   .seat-5 {
     top: 75%;
-    left: 37.5%;
+    left: 5%;
   }
   
   /* Player 6: Lower on the left */
   .seat-6 {
     top: 55%;
-    left: 25%;
+    left: 5%;
   }
   
   /* Player 7: Mid-left */
   .seat-7 {
     top: 35%;
-    left: 15%;
+    left: 5%;
   }
   
   /* Player 8: Top left */

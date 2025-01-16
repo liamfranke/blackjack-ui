@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import TableLayout from "./TableLayout";
 
+
 /** Generate a simple 52-card deck */
 function generateDeck() {
   const suits = ["♠", "♥", "♦", "♣"];
@@ -55,11 +56,22 @@ function calculateScore(cards) {
 
   // If score is over 21 and we have aces counted as 11, reduce them to 1
   while (score > 21 && aces > 0) {
-    score -= 10; // subtract 10, effectively making one ace worth 1 instead of 11
+    score -= 10;
     aces--;
   }
 
   return score;
+}
+
+/** Returns a random bet (multiple of 5) between 5 and 50 */
+function getRandomBet() {
+  // Possible bets: 5,10,15,...,50
+  const bets = [];
+  for (let b = 5; b <= 50; b += 5) {
+    bets.push(b);
+  }
+  const randomIndex = Math.floor(Math.random() * bets.length);
+  return bets[randomIndex];
 }
 
 export default function BlackjackGame() {
@@ -71,7 +83,6 @@ export default function BlackjackGame() {
   //   - bet: number
   //   - score: number
   const [players, setPlayers] = useState([]);
-
   const [dealer, setDealer] = useState({ id: "dealer-1", cards: [], score: 0 });
 
   // Which card in the dealOrder we’re currently on (0..dealOrder.length)
@@ -82,37 +93,82 @@ export default function BlackjackGame() {
 
   // We’ll store the interval ID in a ref so we can clear it on unmount / stop
   const dealIntervalRef = useRef(null);
+  // HIT/STAND logic (Phase 3)
+  const [isHitStandActive, setIsHitStandActive] = useState(false);
+  const [hitStandIndex, setHitStandIndex] = useState(0);
+  const hitStandIntervalRef = useRef(null);
+
+  /**
+   * PHASES:
+   *  1) Collect Bets
+   *  2) Deal Cards
+   *  3) (Future) Post-Deal actions (hit/stand or finalize round)
+   */
+  const [phase, setPhase] = useState(1);
 
   // On mount (or after a full "Restart"), set up initial state
   useEffect(() => {
+    // Start fresh
     initializeGame();
   }, []); // run once
 
   function initializeGame() {
-    // Create and shuffle a fresh deck
-    const d = generateDeck();
-    shuffleDeck(d);
+    // Phase 1 by default: collect bets
+    setPhase(1);
 
-    // Create 8 players, each with empty cards, a bet of $5, and 0 score
+    // Create empty players with 0 bets initially (we'll fill them in Phase 1)
     const initialPlayers = Array.from({ length: 8 }, (_, i) => ({
       id: `player-${i + 1}`,
       cards: [],
-      bet: 5,      // Minimum bet of $5 to buy in
+      bet: 0,
       score: 0,
+      actions: [],  // track hit/stand steps
+      isBlackjack: false,
+      isBust: false
     }));
-
-    setDeck(d);
     setPlayers(initialPlayers);
+    
+    // Reset the dealer
     setDealer({ id: "dealer-1", cards: [], score: 0 });
+
+    // Reset dealing logic
+    setDeck([]);
     setDealIndex(0);
     setIsDealing(false);
   }
 
+  // Phase 1 action: randomize bets
+  function collectBets() {
+    // Randomize each player’s bet
+    setPlayers((prev) =>
+      prev.map((p) => ({ ...p, bet: getRandomBet() }))
+    );
+  }
+
+  // Move from phase 1 (betting) to phase 2 (dealing)
+  function goToPhase2() {
+    // Create and shuffle a fresh deck
+    const d = generateDeck();
+    shuffleDeck(d);
+    setDeck(d);
+
+    // Clear out any old cards from a previous round just in case
+    setPlayers((prev) =>
+      prev.map((p) => ({ ...p, cards: [], score: 0 }))
+    );
+    setDealer({ id: "dealer-1", cards: [], score: 0 });
+
+    // Start the dealing phase
+    setPhase(2);
+  }
+
   // Deal one card to the next seat in dealOrder
   function dealNextCard() {
-    // If we’ve dealt all 17 cards, stop
     if (dealIndex >= dealOrder.length) {
+      // we've dealt all the initial cards
       setIsDealing(false);
+      // Potentially move to phase 3 automatically or via a button
+      setPhase(3);
       return;
     }
 
@@ -154,13 +210,112 @@ export default function BlackjackGame() {
     setDealIndex((prev) => prev + 1);
   }
 
+  function startHitStandPhase() {
+    // Move to phase 3
+    setPhase(3);
+    setHitStandIndex(0);
+    setIsHitStandActive(true);
+  }
+
+  /**
+   * The main loop that runs every 2.5s to handle
+   * a single "hit or stand" action for the current player.
+   */
+  useEffect(() => {
+    if (!isHitStandActive) {
+      clearInterval(hitStandIntervalRef.current);
+      return;
+    }
+
+    hitStandIntervalRef.current = setInterval(() => {
+      doNextHitOrStand();
+    }, 500);
+
+    return () => clearInterval(hitStandIntervalRef.current);
+  }, [isHitStandActive, hitStandIndex]);
+
+  /**
+   * Decide randomly to hit or stand for the current player,
+   * deal one card if "hit". If bust or stand, move on to next player.
+   */
+  function doNextHitOrStand() {
+    // If we've gone beyond the last player, stop
+    if (hitStandIndex >= players.length) {
+      setIsHitStandActive(false);
+      return;
+    }
+
+    // Grab the current player
+    const pIndex = hitStandIndex;
+    const currentPlayer = players[pIndex];
+
+    if (currentPlayer.score === 21) {
+      currentPlayer.isBlackjack = true
+      setHitStandIndex(pIndex + 1);
+    }
+
+    if (currentPlayer.score > 21) {
+      currentPlayer.isBust = true
+      setHitStandIndex(pIndex + 1)
+    }
+
+    // If they've already busted or stood (edge case), skip to next
+    // but normally we won't call doNextHitOrStand() once they've ended
+    // so let's just proceed with random logic:
+
+    // 50/50 random
+    const action = Math.random() < 0.5 ? "hit" : "stand";
+
+    // Clone the deck and players
+    let newDeck = [...deck];
+    let newPlayers = [...players];
+    let updatedPlayer = { ...currentPlayer };
+
+    if (action === "stand") {
+      // Record the action
+      updatedPlayer.actions.push("stand");
+      // Next player
+      newPlayers[pIndex] = updatedPlayer;
+      setPlayers(newPlayers);
+      setHitStandIndex(pIndex + 1);
+
+    } else {
+      // action === "hit"
+      updatedPlayer.actions.push("hit");
+
+      // Deal one card
+      const nextCard = newDeck.pop();
+      updatedPlayer.cards = [...updatedPlayer.cards, nextCard];
+      updatedPlayer.score = calculateScore(updatedPlayer.cards);
+
+      // Check bust
+      if (updatedPlayer.score > 21) {
+        updatedPlayer.isBust = true
+
+        // Move to next player
+        newPlayers[pIndex] = updatedPlayer;
+        setPlayers(newPlayers);
+        setHitStandIndex(pIndex + 1);
+      } else {
+        // Not bust yet, so we reinsert updated player and deck
+        // BUT we keep the same player index for the next tick
+        newPlayers[pIndex] = updatedPlayer;
+        console.log(newPlayers[pIndex])
+        setPlayers(newPlayers);
+        setDeck(newDeck);
+
+        // Notice we do NOT increment hitStandIndex, so next tick is the same player
+        // That allows them to "hit again" or eventually "stand."
+      }
+    }
+  }
   // Setup or clear the interval whenever isDealing changes
   useEffect(() => {
     if (isDealing) {
-      // Every 5 seconds, deal one card
+      // Every 0.5 seconds, deal one card
       dealIntervalRef.current = setInterval(() => {
         dealNextCard();
-      }, 2500);
+      }, 500);
 
       // Cleanup if we stop dealing
       return () => {
@@ -174,7 +329,6 @@ export default function BlackjackGame() {
 
   // Start dealing from the current position
   function handleStartDealing() {
-    // If we’ve already dealt all cards, do nothing
     if (dealIndex >= dealOrder.length) return;
     setIsDealing(true);
   }
@@ -192,18 +346,50 @@ export default function BlackjackGame() {
 
   return (
     <div style={{ padding: "10px" }}>
+      {/* PHASE 1: Collect bets */}
+      {phase === 1 && (
+        <div style={{ marginBottom: "10px" }}>
+          <h3>Phase 1: Collect Bets</h3>
+          <button onClick={collectBets}>Randomize Bets (5 to 50)</button>
+          <button onClick={goToPhase2} style={{ marginLeft: 8 }}>
+            Next (Go to Dealing)
+          </button>
+        </div>
+      )}
+
+      {/* PHASE 2: Dealing */}
+      {phase === 2 && (
+        <div style={{ marginBottom: "10px" }}>
+          <h3>Phase 2: Dealing</h3>
+          <button onClick={handleStartDealing} disabled={isDealing}>
+            Start Dealing
+          </button>
+          <button onClick={handleStopDealing} disabled={!isDealing}>
+            Stop Dealing
+          </button>
+        </div>
+      )}
+
+      {/* PHASE 3: Hit or Stand */}
+      {phase === 3 && (
+        <div>
+          <h3>Phase 3: Hit or Stand</h3>
+          {/* Kick off the random "one at a time" logic if not active yet */}
+          {!isHitStandActive && (
+            <button onClick={startHitStandPhase}>Start Hit/Stand</button>
+          )}
+          {isHitStandActive && (
+            <p>Players are actively hitting or standing one card at a time...</p>
+          )}
+        </div>
+      )}
+
+      {/* Common: Restart button */}
       <div style={{ marginBottom: "10px" }}>
-        <button onClick={handleStartDealing} disabled={isDealing}>
-          Start Dealing
-        </button>
-        <button onClick={handleStopDealing} disabled={!isDealing}>
-          Stop Dealing
-        </button>
-        <button onClick={handleRestart}>
-          Reshuffle / Restart
-        </button>
+        <button onClick={handleRestart}>Reshuffle / Restart</button>
       </div>
 
+      {/* Table Layout always visible, showing players/dealer status */}
       <TableLayout players={players} dealer={dealer} />
     </div>
   );
